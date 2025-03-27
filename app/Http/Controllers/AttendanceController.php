@@ -28,42 +28,27 @@ class AttendanceController extends Controller
     public function store(Request $request)
     {
         $request->all();
-        //dd($request);
-        $image = $request->image;
-        //dump($image); 
-        
+        $image = $request->image;        
         $subject_id = $request->subject_id;
-        
         $validatedData = $request->validate([
             'subject_id' => 'required|exists:subject,id',
             'image' => 'required|string'
         ]);
-
-        // Lấy ds public/anh
         $imageDirectory = public_path('uploads'); // Đường dẫn uploads
         $studentImages = File::files($imageDirectory); // Lấy tất cả file 
-        //dump($studentImages);
-        //log::info('Student Images:', ['images' => $studentImages]);
-
-        // Chuyển đổi tất cả ảnh sinh viên sang base64
         $studentImageBase64List = [];
         $studentImageNames = [];
         foreach ($studentImages as $studentImage) {
             $imageData = file_get_contents($studentImage->getPathname());//chuyển ảnh thành nhị phân
-//dd($imageData);
             $studentImageBase64List[] = base64_encode($imageData); // Chuyển thành base64
             $studentImageNames[] = $studentImage->getFilename(); // Lưu tên file
         }
 
-//dd($studentImageNames);
-        // Face++ API Keys
         $api_key = "GKue9GEL_tgEcHYKqGL7tGGbeMhTaaEj";
         $api_secret = "zOS14Y29mX65ksNVRPY2xJydtoJntmzU";
         $face_api_url = "https://api-us.faceplusplus.com/facepp/v3/compare";
 
-        //dump($studentImageNames);
         foreach ($studentImageBase64List as $index => $base64image) {
-            //dump($base64image);
             $response = Http::asForm()->withOptions(['verify' => false])->post($face_api_url, [
                 'api_key' => $api_key,
                 'api_secret' => $api_secret,
@@ -71,21 +56,12 @@ class AttendanceController extends Controller
                 'image_base64_2' => $base64image 
             ]);
             $result = $response->json();
-            //dd($result);
-            //Log::info('Face++ API response', ['response' => $result]);
             if (isset($result['confidence']) && $result['confidence'] > 80) {
                 $matchedStudentImage = $studentImageNames[$index];
-                //dd($matchedStudentImage);
-                //log::info('Matched student image:', ['image' => $matchedStudentImage]);
                 $student= Student::where('profile_image', 'LIKE', "%/$matchedStudentImage")->first();
-                //dd($student);
                 $student_id = $student->id;
-                //dd($student_id);
-                //log::info('Student ID:', ['id' => $student_id]);
-                //dd($student_id);
                 $attendance_befor= Attendance::where('subject_id', $subject_id)
                 ->where('student_id', $student_id )->first();
-                //dd($subject_id);
                 if($attendance_befor){
                     return redirect()->back() ->with('error', 'Người tham dự đã điểm danh!');;
                 }
@@ -100,7 +76,6 @@ class AttendanceController extends Controller
             }
         }
         $attendances = Attendance::where('subject_id', $subject_id)->get();
-        //dd($result);
         return redirect()->back();
     }
 }
