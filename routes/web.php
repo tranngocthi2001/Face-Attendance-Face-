@@ -20,6 +20,12 @@ Route::post('/login', [StudentController::class, 'login']);
 Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth:student', 'role:2'])->group(function () {
+    Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
+    Route::get('/attendances/create/{id}', [AttendanceController::class, 'create'])->name('attendances.create');
+    Route::post('/attendances', [AttendanceController::class, 'store'])->name('attendances.store');
+});
+
+Route::middleware(['auth:student', 'role:2'])->group(function () {
     Route::get('/admindashboard', function () {
         return view('admin.admindashboard');
     })->name('admin.admindashboard');
@@ -45,9 +51,5 @@ Route::middleware(['auth:student', 'role:2'])->group(function () {
    Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
 });
 
-Route::middleware(['auth:student', 'role:2'])->group(function () {
-    Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
-    Route::get('/attendances/create/{id}', [AttendanceController::class, 'create'])->name('attendances.create');
-    Route::post('/attendances', [AttendanceController::class, 'store'])->name('attendances.store');
-});
+
 
